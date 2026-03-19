@@ -1,0 +1,21 @@
+{
+  "name": "Crew Panel - Jollibee EDSA Kamias",
+  "short_name": "Crew Panel",
+  "start_url": "/queue-system/crew.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#e60023",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "assets/jollibee-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/jollibee-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
