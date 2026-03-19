@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Queue Display</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #0f0f1a;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(90deg, #1a1a2e, #16213e);
+            border-bottom: 3px solid #e60023;
+            padding: 14px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .header .brand {
+            font-size: 22px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 3px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header .brand img {
+            height: 44px;
+            width: auto;
+            border-radius: 50%;
+            background: #e60023;
+            padding: 4px;
+        }
+        .header .brand span { color: #e60023; }
+        .header .time {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffcc00;
+            letter-spacing: 2px;
+        }
+
+        /* MAIN */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        /* LEFT — NOW SERVING */
+        .now-serving-panel {
+            width: 40%;
+            background: linear-gradient(160deg, #1a0008 0%, #3a0010 50%, #1a0008 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            gap: 12px;
+            position: relative;
+            border-right: 1px solid rgba(230,0,35,0.3);
+        }
+
+        /* subtle glow ring behind number */
+        .now-serving-panel::before {
+            content: '';
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(230,0,35,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .now-serving-label {
+            font-size: 13px;
+            letter-spacing: 5px;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            animation: fade-pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes fade-pulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.2; }
+        }
+
+        .now-serving-number {
+            font-size: clamp(60px, 9vw, 130px);
+            font-weight: bold;
+            color: #fff;
+            line-height: 1;
+            white-space: nowrap;
+            text-align: center;
+            width: 100%;
+            text-shadow: 0 0 40px rgba(230,0,35,0.6), 0 0 80px rgba(230,0,35,0.2);
+            z-index: 1;
+        }
+
+        .now-serving-badge {
+            background: #e60023;
+            color: #fff;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            padding: 6px 18px;
+            border-radius: 20px;
+        }
+
+        /* RIGHT — QUEUE PANEL */
+        .queue-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 18px 20px;
+            gap: 10px;
+            overflow: hidden;
+            background: #12121f;
+        }
+
+        .queue-section {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .section-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .section-dot.red { background: #e60023; box-shadow: 0 0 8px #e60023; }
+        .section-dot.orange { background: #ff8c00; box-shadow: 0 0 8px #ff8c00; }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        .section-title.ready-title { color: #e60023; }
+        .section-title.prep-title  { color: #ff8c00; }
+
+        .cook-icon {
+            font-size: 18px;
+            display: inline-block;
+            animation: bounce-cook 0.7s ease-in-out infinite alternate;
+        }
+        @keyframes bounce-cook {
+            from { transform: translateY(0); }
+            to   { transform: translateY(-5px); }
+        }
+
+        .section-line {
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.07);
+        }
+
+        /* ORDER GRID */
+        .queue-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            align-content: start;
+            scrollbar-width: none;
+        }
+        .queue-grid::-webkit-scrollbar { display: none; }
+
+        /* ORDER BOXES */
+        .order-box {
+            background: #1e1e30;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            font-size: clamp(16px, 2.2vw, 28px);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1.4;
+            color: rgba(255,255,255,0.6);
+            transition: all 0.3s;
+        }
+
+        .order-box.top {
+            background: rgba(230,0,35,0.15);
+            border-color: #e60023;
+            color: #fff;
+        }
+
+        .order-box.speaking {
+            background: #e60023;
+            border-color: #e60023;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(230,0,35,0.5);
+        }
+
+        .order-box.preparing {
+            background: rgba(255,140,0,0.1);
+            border-color: rgba(255,140,0,0.5);
+            color: #ff8c00;
+            animation: pulse-prep 1.8s ease-in-out infinite;
+        }
+
+        @keyframes pulse-prep {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,140,0,0.2); }
+            50%       { box-shadow: 0 0 0 6px rgba(255,140,0,0); }
+        }
+
+        /* DIVIDER */
+        .divider {
+            height: 1px;
+            background: rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+
+        /* FOOTER */
+        .footer {
+            background: #0a0a14;
+            border-top: 1px solid rgba(230,0,35,0.3);
+            text-align: center;
+            padding: 8px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.25);
+            flex-shrink: 0;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        /* TAP OVERLAY */
+        #tapOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10,10,20,0.97);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            cursor: pointer;
+            gap: 16px;
+        }
+        #tapOverlay .tap-icon { font-size: 56px; animation: bounce-cook 0.8s ease-in-out infinite alternate; }
+        #tapOverlay p { font-size: 22px; font-weight: bold; color: white; letter-spacing: 3px; }
+        #tapOverlay small { font-size: 13px; color: rgba(255,255,255,0.4); }
+        #tapOverlay .tap-ring {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            border: 2px solid rgba(230,0,35,0.5);
+            display: flex; align-items: center; justify-content: center;
+            animation: ring-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes ring-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(230,0,35,0.3); }
+            50%       { box-shadow: 0 0 0 20px rgba(230,0,35,0); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="tapOverlay">
+    <div class="tap-ring"><div class="tap-icon">👆</div></div>
+    <p>TAP TO ENABLE SOUND</p>
+    <small>Required by browser</small>
+</div>
+
+<div class="header">
+    <div class="brand"><img src="assets/jollibee-logo.png" alt="Jollibee"> ORDER <span>QUEUE</span></div>
+    <div class="time" id="clock"></div>
+</div>
+
+<div class="main">
+    <div class="now-serving-panel">
+        <div class="now-serving-label">Now Serving</div>
+        <div class="now-serving-number" id="nowServing">---</div>
+        <div class="now-serving-badge">Please proceed to counter</div>
+    </div>
+
+    <div class="queue-panel">
+        <div class="queue-section">
+            <div class="section-header">
+                <div class="section-dot red"></div>
+                <span class="section-title ready-title">Ready Orders</span>
+                <div class="section-line"></div>
+            </div>
+            <div class="queue-grid" id="orderList"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="queue-section">
+            <div class="section-header">
+                <div class="section-dot orange"></div>
+                <span class="cook-icon">🍳</span>
+                <span class="section-title prep-title">Now Preparing</span>
+                <div class="section-line"></div>
+            </div>
+            <div class="queue-grid" id="preparingList"></div>
+        </div>
+    </div>
+</div>
+
+<div class="footer">EDSA KAMIAS BRANCH</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCSCcRjfxYvkMVvE_7xoPcpNzTe4aOtZHc",
+  authDomain: "queue-system-5a2a0.firebaseapp.com",
+  projectId: "queue-system-5a2a0",
+  storageBucket: "queue-system-5a2a0.firebasestorage.app",
+  messagingSenderId: "979448239100",
+  appId: "1:979448239100:web:b5172383394fde8facd879"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 🕐 CLOCK
+function updateClock() {
+    document.getElementById("clock").innerText = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+let lastTopOrder = null;
+let soundActivated = false;
+let repeatInterval = null;
+
+// 🔊 SOUND
+const overlay = document.getElementById("tapOverlay");
+if (localStorage.getItem("soundActivated") === "true") {
+    overlay.style.display = "none";
+    soundActivated = true;
+}
+overlay.addEventListener("click", () => {
+    speechSynthesis.cancel();
+    speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+    soundActivated = true;
+    localStorage.setItem("soundActivated", "true");
+    overlay.style.display = "none";
+});
+
+function announceAll(orders) {
+    if (!soundActivated || orders.length === 0) return;
+    let i = 0;
+    function speakNext() {
+        if (i >= orders.length) {
+            document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking"));
+            const boxes = document.querySelectorAll("#orderList .order-box");
+            if (boxes.length > 0) boxes[0].classList.add("top");
+            return;
+        }
+        document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking", "top"));
+        document.querySelectorAll("#orderList .order-box").forEach(b => {
+            if (b.innerText == orders[i]) b.classList.add("speaking");
+        });
+        const u = new SpeechSynthesisUtterance("Now serving order number " + orders[i]);
+        u.lang = "en-US"; u.rate = 0.9; u.pitch = 1; u.volume = 1;
+        u.onend = () => { i++; setTimeout(speakNext, 800); };
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+    }
+    speakNext();
+}
+
+function startRepeat(orders) {
+    if (repeatInterval) clearInterval(repeatInterval);
+    repeatInterval = setInterval(() => announceAll(orders), 120000);
+}
+
+onSnapshot(q, (snapshot) => {
+    const orderList = document.getElementById("orderList");
+    const preparingList = document.getElementById("preparingList");
+    const nowServing = document.getElementById("nowServing");
+
+    orderList.innerHTML = "";
+    preparingList.innerHTML = "";
+
+    let first = true;
+    let readyOrders = [];
+
+    snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+
+        if (data.status === "ready") {
+            readyOrders.push(data.orderNumber);
+            if (first) { nowServing.innerText = data.orderNumber; first = false; }
+            const div = document.createElement("div");
+            div.className = "order-box" + (readyOrders.length === 1 ? " top" : "");
+            div.innerText = data.orderNumber;
+            orderList.appendChild(div);
+        }
+
+        if (data.status === "preparing") {
+            const div = document.createElement("div");
+            div.className = "order-box preparing";
+            div.innerText = data.orderNumber;
+            preparingList.appendChild(div);
+        }
+    });
+
+    if (!first) {
+        const newKeys = readyOrders.join(",");
+        const prevKeys = lastTopOrder || "";
+        const prevList = prevKeys ? prevKeys.split(",").map(Number) : [];
+        const hasNewOrder = readyOrders.some(n => !prevList.includes(n));
+
+        if (hasNewOrder) announceAll(readyOrders);
+        lastTopOrder = newKeys;
+        startRepeat(readyOrders);
+    } else {
+        nowServing.innerText = "---";
+        if (repeatInterval) clearInterval(repeatInterval);
+        lastTopOrder = null;
+    }
+});
+</script>
+
+</body>
+</html>

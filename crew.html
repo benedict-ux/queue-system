@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crew Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        .header {
+            background: #e60023;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header span {
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header img {
+            height: 52px;
+            width: auto;
+            border-radius: 50%;
+            background: #e60023;
+            padding: 4px;
+        }
+
+        /* MAIN CARD */
+        .card {
+            background: #16213e;
+            border-radius: 20px;
+            padding: 24px 20px;
+            margin: 16px auto;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        /* DESKTOP layout */
+        @media (min-width: 900px) {
+            .card {
+                max-width: 540px;
+                flex: unset;
+                margin: auto;
+                padding: 28px 36px;
+                gap: 10px;
+            }
+            .btn { padding: 14px; font-size: 18px; }
+            .input-wrap input { padding: 16px 20px; font-size: 32px; }
+            .input-wrap input::placeholder { font-size: 32px; }
+            .footer { padding: 10px; }
+        }
+
+        .card-title {
+            font-size: 14px;
+            letter-spacing: 3px;
+            color: #888;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        /* INPUT */
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap input {
+            width: 100%;
+            padding: 18px 20px;
+            font-size: 32px;
+            font-weight: bold;
+            border-radius: 14px;
+            border: 2px solid #0f3460;
+            background: #0f3460;
+            color: #ffcc00;
+            text-align: center;
+            letter-spacing: 4px;
+            outline: none;
+            transition: border 0.2s;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .input-wrap input::-webkit-outer-spin-button,
+        .input-wrap input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .input-wrap input:focus {
+            border-color: #e60023;
+        }
+
+        .input-wrap input::placeholder {
+            color: #444;
+            font-size: 32px;
+            letter-spacing: 6px;
+            text-align: center;
+        }
+
+        /* BUTTONS */
+        .btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: opacity 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:active { transform: scale(0.97); opacity: 0.9; }
+
+        .btn-call {
+            background: #e60023;
+            color: white;
+        }
+
+        .btn-prepare {
+            background: #ff8c00;
+            color: white;
+        }
+
+        .btn-claim {
+            background: #0f3460;
+            color: white;
+            border: 2px solid #e60023;
+        }
+
+        .btn-clear {
+            background: #2a2a2a;
+            color: #ff4c4c;
+            border: 2px solid #ff4c4c;
+        }
+
+        /* STATUS — removed from card, replaced by toast */
+
+        /* TOAST */
+        #toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: #16213e;
+            border: 2px solid #0f3460;
+            border-radius: 14px;
+            padding: 14px 28px;
+            font-size: 17px;
+            font-weight: bold;
+            color: #aaa;
+            white-space: nowrap;
+            z-index: 8888;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        #toast.success { color: #4cff91; border-color: #4cff91; }
+        #toast.error   { color: #ff4c4c; border-color: #ff4c4c; }
+        #toast.warn    { color: #ffcc00; border-color: #ffcc00; }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 12px;
+            color: #444;
+            letter-spacing: 1px;
+        }
+
+        /* LANDSCAPE — phones & tablets */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .header { padding: 8px 24px; }
+            .header span { font-size: 18px; }
+            .card { margin: 8px auto; padding: 12px 16px; gap: 8px; border-radius: 14px; }
+            .card-title { font-size: 11px; margin-bottom: 0; }
+            .input-wrap input { padding: 10px 16px; font-size: 24px; }
+            .input-wrap input::placeholder { font-size: 24px; }
+            .btn { padding: 12px; font-size: 15px; border-radius: 10px; }
+            .status { padding: 10px; font-size: 14px; min-height: 38px; }
+            .footer { padding: 6px; font-size: 11px; }
+        }
+
+        /* TABLET landscape */
+        @media (min-width: 768px) and (orientation: landscape) {
+            .card { max-width: 560px; padding: 24px 32px; }
+        }
+
+        /* PIN OVERLAY */
+        #pinOverlay {
+            position: fixed;
+            inset: 0;
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            gap: 16px;
+            padding: 24px;
+        }
+
+        #pinOverlay .pin-icon {
+            font-size: 56px;
+            margin-bottom: 8px;
+        }
+
+        #pinOverlay h2 {
+            color: #ffcc00;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+
+        #pinOverlay p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        #pinInput {
+            width: 220px;
+            padding: 18px;
+            font-size: 32px;
+            text-align: center;
+            border-radius: 14px;
+            border: 2px solid #0f3460;
+            background: #0f3460;
+            color: #ffcc00;
+            letter-spacing: 10px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        #pinInput:focus { border-color: #e60023; }
+
+        #pinError {
+            color: #ff4c4c;
+            font-size: 14px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- PIN OVERLAY -->
+<div id="pinOverlay">
+    <div class="pin-icon">🔒</div>
+    <h2>CREW ACCESS</h2>
+    <p>Enter your 4-digit PIN to continue</p>
+    <input type="password" id="pinInput" maxlength="4" placeholder="••••" oninput="checkPin()" autofocus>
+    <div id="pinError"></div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+    <span><img src="assets/jollibee-logo.png" alt="Jollibee"> CREW PANEL</span>
+</div>
+
+<!-- MAIN -->
+<div class="card">
+    <div class="card-title">Enter Order Number</div>
+
+    <div class="input-wrap">
+        <input type="number" id="orderNumber" placeholder="..." inputmode="numeric">
+    </div>
+
+    <button class="btn btn-call" onclick="callOrder()">📢 CALL ORDER</button>
+    <button class="btn btn-prepare" onclick="prepareOrder()">🍳 PREPARING</button>
+    <button class="btn btn-claim" onclick="claimOrder()">✅ CLAIM ORDER</button>
+    <button class="btn btn-clear" onclick="clearAll()">🗑 CLEAR ALL ORDERS</button>
+</div>
+
+<div class="footer">EDSA KAMIAS BRANCH</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCSCcRjfxYvkMVvE_7xoPcpNzTe4aOtZHc",
+  authDomain: "queue-system-5a2a0.firebaseapp.com",
+  projectId: "queue-system-5a2a0",
+  storageBucket: "queue-system-5a2a0.firebasestorage.app",
+  messagingSenderId: "979448239100",
+  appId: "1:979448239100:web:b5172383394fde8facd879"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 🔒 PIN
+const pinOverlay = document.getElementById("pinOverlay");
+if (sessionStorage.getItem("crewUnlocked") === "true") {
+    pinOverlay.style.display = "none";
+}
+
+window.checkPin = function() {
+    const val = document.getElementById("pinInput").value;
+    if (val === "1992") {
+        sessionStorage.setItem("crewUnlocked", "true");
+        pinOverlay.style.display = "none";
+    } else if (val.length === 4) {
+        document.getElementById("pinError").innerText = "❌ Wrong PIN, try again.";
+        document.getElementById("pinInput").value = "";
+    }
+}
+
+function setStatus(msg, type) {
+    const toast = document.getElementById("toast");
+    toast.innerText = msg;
+    toast.className = "show " + (type || "");
+    clearTimeout(window._statusTimer);
+    window._statusTimer = setTimeout(() => {
+        toast.className = "";
+    }, 2000);
+}
+
+// 🍳 PREPARE ORDER
+window.prepareOrder = async function() {
+    const orderInput = document.getElementById("orderNumber");
+    const number = orderInput.value;
+
+    if (!number) { setStatus("⚠️ Enter a valid number!", "warn"); return; }
+
+    try {
+        const q = query(collection(db, "orders"), where("orderNumber", "==", Number(number)));
+        const snap = await getDocs(q);
+
+        if (!snap.empty) { setStatus("❌ Order already exists!", "error"); return; }
+
+        await addDoc(collection(db, "orders"), {
+            orderNumber: Number(number),
+            status: "preparing",
+            timestamp: Date.now(),
+            branch: "EDSA_KAMIAS"
+        });
+
+        setStatus("🍳 Order " + number + " preparing!", "success");
+        orderInput.value = "";
+    } catch (e) {
+        console.error(e);
+        setStatus("❌ Error occurred!", "error");
+    }
+}
+
+// 📢 CALL ORDER
+window.callOrder = async function() {
+    const orderInput = document.getElementById("orderNumber");
+    const number = orderInput.value;
+
+    if (!number) { setStatus("⚠️ Enter a valid number!", "warn"); return; }
+
+    try {
+        const q = query(collection(db, "orders"), where("orderNumber", "==", Number(number)));
+        const snap = await getDocs(q);
+
+        if (!snap.empty) {
+            // if preparing, upgrade to ready
+            const d = snap.docs[0];
+            if (d.data().status === "preparing") {
+                await updateDoc(doc(db, "orders", d.id), { status: "ready", timestamp: Date.now() });
+                setStatus("✅ Order " + number + " is now ready!", "success");
+                orderInput.value = "";
+                return;
+            }
+            setStatus("❌ Order already exists!", "error");
+            return;
+        }
+
+        await addDoc(collection(db, "orders"), {
+            orderNumber: Number(number),
+            status: "ready",
+            timestamp: Date.now(),
+            branch: "EDSA_KAMIAS"
+        });
+
+        setStatus("✅ Order " + number + " called!", "success");
+        orderInput.value = "";
+    } catch (e) {
+        console.error(e);
+        setStatus("❌ Error occurred!", "error");
+    }
+}
+
+// 🗑 CLEAR ALL ORDERS
+window.clearAll = async function() {
+    if (!confirm("Delete ALL orders? This cannot be undone.")) return;
+    try {
+        const snap = await getDocs(collection(db, "orders"));
+        if (snap.empty) { setStatus("⚠️ No orders to clear!", "warn"); return; }
+        const deletes = snap.docs.map(d => deleteDoc(doc(db, "orders", d.id)));
+        await Promise.all(deletes);
+        setStatus("🗑 All orders cleared!", "success");
+        document.getElementById("orderNumber").value = "";
+    } catch (e) {
+        console.error(e);
+        setStatus("❌ Error clearing orders!", "error");
+    }
+}
+
+// ✅ CLAIM ORDER
+window.claimOrder = async function() {
+    const number = document.getElementById("orderNumber").value;
+
+    if (!number) { setStatus("⚠️ Enter a number!", "warn"); return; }
+
+    try {
+        const q = query(collection(db, "orders"), where("orderNumber", "==", Number(number)));
+        const snap = await getDocs(q);
+
+        if (snap.empty) { setStatus("❌ Order not found!", "error"); return; }
+
+        const d = snap.docs[0];
+        if (d.data().status === "preparing") {
+            setStatus("⚠️ Order still preparing!", "warn");
+            return;
+        }
+
+        snap.forEach(async (d) => await deleteDoc(doc(db, "orders", d.id)));
+
+        setStatus("✅ Order " + number + " claimed!", "success");
+        document.getElementById("orderNumber").value = "";
+    } catch (e) {
+        console.error(e);
+        setStatus("❌ Error occurred!", "error");
+    }
+}
+</script>
+
+</body>
+</html>
