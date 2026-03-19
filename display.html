@@ -71,7 +71,6 @@
             border-right: 1px solid rgba(230,0,35,0.3);
         }
 
-        /* subtle glow ring behind number */
         .now-serving-panel::before {
             content: '';
             position: absolute;
@@ -367,21 +366,22 @@ overlay.addEventListener("click", () => {
     overlay.style.display = "none";
 });
 
-function announceAll(orders) {
-    if (!soundActivated || orders.length === 0) return;
+function announceNew(newOrders) {
+    if (!soundActivated || newOrders.length === 0) return;
     let i = 0;
     function speakNext() {
-        if (i >= orders.length) {
+        if (i >= newOrders.length) {
+            // restore top highlight after announcing
             document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking"));
-            const boxes = document.querySelectorAll("#orderList .order-box");
-            if (boxes.length > 0) boxes[0].classList.add("top");
+            const first = document.querySelector("#orderList .order-box");
+            if (first) first.classList.add("top");
             return;
         }
         document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking", "top"));
         document.querySelectorAll("#orderList .order-box").forEach(b => {
-            if (b.innerText == orders[i]) b.classList.add("speaking");
+            if (b.innerText == newOrders[i]) b.classList.add("speaking");
         });
-        const u = new SpeechSynthesisUtterance("Now serving order number " + orders[i]);
+        const u = new SpeechSynthesisUtterance("Now serving order number " + newOrders[i]);
         u.lang = "en-US"; u.rate = 0.9; u.pitch = 1; u.volume = 1;
         u.onend = () => { i++; setTimeout(speakNext, 800); };
         speechSynthesis.cancel();
@@ -390,9 +390,52 @@ function announceAll(orders) {
     speakNext();
 }
 
+function announceAll() {
+    if (!soundActivated) return;
+    function speakNext() {
+        // always read live DOM for current ready orders
+        const boxes = [...document.querySelectorAll("#orderList .order-box")];
+        if (boxes.length === 0) return;
+
+        // find the currently speaking box index
+        const speakingIdx = boxes.findIndex(b => b.classList.contains("speaking"));
+        const nextIdx = speakingIdx === -1 ? 0 : speakingIdx + 1;
+
+        // clear all highlights
+        boxes.forEach(b => b.classList.remove("speaking", "top"));
+
+        if (nextIdx >= boxes.length) {
+            // done — restore top highlight on first box
+            if (boxes.length > 0) boxes[0].classList.add("top");
+            return;
+        }
+
+        const box = boxes[nextIdx];
+        box.classList.add("speaking");
+        const num = box.innerText;
+
+        const u = new SpeechSynthesisUtterance("Please, order number " + num + ", please claim your order!");
+        u.lang = "en-US"; u.rate = 0.9; u.pitch = 1; u.volume = 1;
+        u.onend = () => setTimeout(speakNext, 800);
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+    }
+
+    // start from first box
+    document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking", "top"));
+    const first = document.querySelector("#orderList .order-box");
+    if (!first) return;
+    first.classList.add("speaking");
+    const u = new SpeechSynthesisUtterance("Please, order number " + first.innerText + ", please claim your order!");
+    u.lang = "en-US"; u.rate = 0.9; u.pitch = 1; u.volume = 1;
+    u.onend = () => setTimeout(speakNext, 800);
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+}
+
 function startRepeat(orders) {
     if (repeatInterval) clearInterval(repeatInterval);
-    repeatInterval = setInterval(() => announceAll(orders), 120000);
+    repeatInterval = setInterval(() => announceAll(), 120000);
 }
 
 onSnapshot(q, (snapshot) => {
@@ -430,9 +473,9 @@ onSnapshot(q, (snapshot) => {
         const newKeys = readyOrders.join(",");
         const prevKeys = lastTopOrder || "";
         const prevList = prevKeys ? prevKeys.split(",").map(Number) : [];
-        const hasNewOrder = readyOrders.some(n => !prevList.includes(n));
+        const newOrders = readyOrders.filter(n => !prevList.includes(n));
 
-        if (hasNewOrder) announceAll(readyOrders);
+        if (newOrders.length > 0) announceNew(newOrders);
         lastTopOrder = newKeys;
         startRepeat(readyOrders);
     } else {

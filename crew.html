@@ -318,7 +318,7 @@
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc, getDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCSCcRjfxYvkMVvE_7xoPcpNzTe4aOtZHc",
@@ -331,6 +331,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch(() => {});
 
 // 🔒 PIN — fetched from Firestore, never exposed in source
 const pinOverlay = document.getElementById("pinOverlay");
@@ -367,119 +368,100 @@ function setStatus(msg, type) {
     }, 2000);
 }
 
+function setBusy(busy) {
+    document.querySelectorAll(".btn").forEach(b => {
+        b.disabled = busy;
+        b.style.opacity = busy ? "0.6" : "1";
+    });
+}
+
 // 🍳 PREPARE ORDER
 window.prepareOrder = async function() {
     const orderInput = document.getElementById("orderNumber");
     const number = orderInput.value;
-
     if (!number) { setStatus("⚠️ Enter a valid number!", "warn"); return; }
-
+    setBusy(true);
     try {
         const q = query(collection(db, "orders"), where("orderNumber", "==", Number(number)));
         const snap = await getDocs(q);
-
-        if (!snap.empty) { setStatus("❌ Order already exists!", "error"); return; }
-
+        if (!snap.empty) { setStatus("❌ Order already exists!", "error"); setBusy(false); return; }
         await addDoc(collection(db, "orders"), {
-            orderNumber: Number(number),
-            status: "preparing",
-            timestamp: Date.now(),
-            branch: "EDSA_KAMIAS"
+            orderNumber: Number(number), status: "preparing", timestamp: Date.now(), branch: "EDSA_KAMIAS"
         });
-
         setStatus("🍳 Order " + number + " preparing!", "success");
         orderInput.value = "";
-    } catch (e) {
-        console.error(e);
-        setStatus("❌ Error occurred!", "error");
-    }
+    } catch (e) { console.error(e); setStatus("❌ Error occurred!", "error"); }
+    setBusy(false);
 }
 
 // 📢 CALL ORDER
 window.callOrder = async function() {
     const orderInput = document.getElementById("orderNumber");
     const number = orderInput.value;
-
     if (!number) { setStatus("⚠️ Enter a valid number!", "warn"); return; }
-
+    setBusy(true);
     try {
         const q = query(collection(db, "orders"), where("orderNumber", "==", Number(number)));
         const snap = await getDocs(q);
-
         if (!snap.empty) {
-            // if preparing, upgrade to ready
             const d = snap.docs[0];
             if (d.data().status === "preparing") {
                 await updateDoc(doc(db, "orders", d.id), { status: "ready", timestamp: Date.now() });
                 setStatus("✅ Order " + number + " is now ready!", "success");
                 orderInput.value = "";
-                return;
+                setBusy(false); return;
             }
             setStatus("❌ Order already exists!", "error");
-            return;
+            setBusy(false); return;
         }
-
         await addDoc(collection(db, "orders"), {
-            orderNumber: Number(number),
-            status: "ready",
-            timestamp: Date.now(),
-            branch: "EDSA_KAMIAS"
+            orderNumber: Number(number), status: "ready", timestamp: Date.now(), branch: "EDSA_KAMIAS"
         });
-
         setStatus("✅ Order " + number + " called!", "success");
         orderInput.value = "";
-    } catch (e) {
-        console.error(e);
-        setStatus("❌ Error occurred!", "error");
-    }
+    } catch (e) { console.error(e); setStatus("❌ Error occurred!", "error"); }
+    setBusy(false);
 }
 
 // 🗑 CLEAR ALL ORDERS
 window.clearAll = async function() {
     if (!confirm("Delete ALL orders? This cannot be undone.")) return;
+    setBusy(true);
     try {
         const snap = await getDocs(collection(db, "orders"));
-        if (snap.empty) { setStatus("⚠️ No orders to clear!", "warn"); return; }
-        const deletes = snap.docs.map(d => deleteDoc(doc(db, "orders", d.id)));
-        await Promise.all(deletes);
+        if (snap.empty) { setStatus("⚠️ No orders to clear!", "warn"); setBusy(false); return; }
+        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
         setStatus("🗑 All orders cleared!", "success");
         document.getElementById("orderNumber").value = "";
-    } catch (e) {
-        console.error(e);
-        setStatus("❌ Error clearing orders!", "error");
-    }
+    } catch (e) { console.error(e); setStatus("❌ Error clearing orders!", "error"); }
+    setBusy(false);
 }
 
 // ✅ CLAIM ORDER
 window.claimOrder = async function() {
     const number = document.getElementById("orderNumber").value;
-
     if (!number) { setStatus("⚠️ Enter a number!", "warn"); return; }
-
+    setBusy(true);
     try {
         const q = query(collection(db, "orders"), where("orderNumber", "==", Number(number)));
         const snap = await getDocs(q);
-
-        if (snap.empty) { setStatus("❌ Order not found!", "error"); return; }
-
+        if (snap.empty) { setStatus("❌ Order not found!", "error"); setBusy(false); return; }
         const d = snap.docs[0];
-        if (d.data().status === "preparing") {
-            setStatus("⚠️ Order still preparing!", "warn");
-            return;
-        }
-
-        snap.forEach(async (d) => await deleteDoc(doc(db, "orders", d.id)));
-
+        if (d.data().status === "preparing") { setStatus("⚠️ Order still preparing!", "warn"); setBusy(false); return; }
+        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
         setStatus("✅ Order " + number + " claimed!", "success");
         document.getElementById("orderNumber").value = "";
-    } catch (e) {
-        console.error(e);
-        setStatus("❌ Error occurred!", "error");
-    }
+    } catch (e) { console.error(e); setStatus("❌ Error occurred!", "error"); }
+    setBusy(false);
 }
 // 📱 Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
+}
+
+// 🔒 Lock portrait on phones only
+if (screen.orientation && window.innerWidth < 768) {
+    screen.orientation.lock("portrait").catch(() => {});
 }
 </script>
 
