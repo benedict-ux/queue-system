@@ -311,7 +311,7 @@
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCSCcRjfxYvkMVvE_7xoPcpNzTe4aOtZHc",
@@ -325,15 +325,23 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 🔒 PIN
+// 🔒 PIN — fetched from Firestore, never exposed in source
 const pinOverlay = document.getElementById("pinOverlay");
+let correctPin = null;
+
 if (sessionStorage.getItem("crewUnlocked") === "true") {
     pinOverlay.style.display = "none";
+} else {
+    // fetch pin from Firestore config
+    getDoc(doc(db, "config", "crew")).then(snap => {
+        if (snap.exists()) correctPin = snap.data().pin;
+    });
 }
 
 window.checkPin = function() {
     const val = document.getElementById("pinInput").value;
-    if (val === "1992") {
+    if (correctPin === null) return; // still loading
+    if (val === correctPin) {
         sessionStorage.setItem("crewUnlocked", "true");
         pinOverlay.style.display = "none";
     } else if (val.length === 4) {
