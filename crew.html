@@ -67,7 +67,7 @@
         }
 
         /* DESKTOP layout */
-        @media (min-width: 900px) {
+        @media (min-width: 900px) and (orientation: portrait) {
             .card {
                 max-width: 540px;
                 flex: unset;
@@ -89,6 +89,9 @@
             text-align: center;
             margin-bottom: 4px;
         }
+
+        /* these are just wrappers — no effect in portrait */
+        .input-side, .btn-side { display: contents; }
 
         /* INPUT */
         .input-wrap {
@@ -208,22 +211,41 @@
             letter-spacing: 1px;
         }
 
-        /* LANDSCAPE — phones & tablets */
-        @media (max-height: 500px) and (orientation: landscape) {
+        /* LANDSCAPE — phones & tablets (two-column layout) */
+        @media (orientation: landscape) {
             .header { padding: 8px 24px; }
             .header span { font-size: 18px; }
-            .card { margin: 8px auto; padding: 12px 16px; gap: 8px; border-radius: 14px; }
-            .card-title { font-size: 11px; margin-bottom: 0; }
-            .input-wrap input { padding: 10px 16px; font-size: 24px; }
-            .input-wrap input::placeholder { font-size: 24px; }
+            .card {
+                flex-direction: row;
+                align-items: stretch;
+                margin: 8px auto;
+                padding: 16px 20px;
+                gap: 16px;
+                border-radius: 14px;
+                max-width: 900px;
+                width: calc(100% - 32px);
+            }
+            .card-title { font-size: 12px; margin-bottom: 4px; }
+            .input-side {
+                flex: 1;
+                display: flex !important;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+            .btn-side {
+                flex: 1;
+                display: flex !important;
+                flex-direction: column;
+                justify-content: center;
+                gap: 8px;
+            }
+            .input-wrap { width: 100%; }
+            .input-wrap input { padding: 14px 16px; font-size: 28px; }
+            .input-wrap input::placeholder { font-size: 28px; }
             .btn { padding: 12px; font-size: 15px; border-radius: 10px; }
-            .status { padding: 10px; font-size: 14px; min-height: 38px; }
             .footer { padding: 6px; font-size: 11px; }
-        }
-
-        /* TABLET landscape */
-        @media (min-width: 768px) and (orientation: landscape) {
-            .card { max-width: 560px; padding: 24px 32px; }
         }
 
         /* PIN OVERLAY */
@@ -301,16 +323,18 @@
 
 <!-- MAIN -->
 <div class="card">
-    <div class="card-title">Enter Order Number</div>
-
-    <div class="input-wrap">
-        <input type="number" id="orderNumber" placeholder="..." inputmode="numeric">
+    <div class="input-side">
+        <div class="card-title">Enter Order Number</div>
+        <div class="input-wrap">
+            <input type="number" id="orderNumber" placeholder="..." inputmode="numeric">
+        </div>
     </div>
-
-    <button class="btn btn-call" onclick="callOrder()">📢 CALL ORDER</button>
-    <button class="btn btn-prepare" onclick="prepareOrder()">🍳 PREPARING</button>
-    <button class="btn btn-claim" onclick="claimOrder()">✅ CLAIM ORDER</button>
-    <button class="btn btn-clear" onclick="clearAll()">🗑 CLEAR ALL ORDERS</button>
+    <div class="btn-side">
+        <button class="btn btn-call" onclick="callOrder()">📢 CALL ORDER</button>
+        <button class="btn btn-prepare" onclick="prepareOrder()">🍳 PREPARING</button>
+        <button class="btn btn-claim" onclick="claimOrder()">✅ CLAIM ORDER</button>
+        <button class="btn btn-clear" onclick="clearAll()">🗑 CLEAR ALL ORDERS</button>
+    </div>
 </div>
 
 <div class="footer">EDSA KAMIAS BRANCH</div>
@@ -460,7 +484,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // 🔒 Lock portrait on phones only
-if (screen.orientation && window.innerWidth < 768) {
+if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock("portrait").catch(() => {});
 }
 </script>

@@ -5,7 +5,7 @@
   "display": "standalone",
   "background_color": "#1a1a2e",
   "theme_color": "#e60023",
-  "orientation": "any",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "assets/jollibee-logo.png",
