@@ -383,7 +383,18 @@ if (localStorage.getItem("soundActivated") === "true") {
     soundActivated = true;
     music.play().then(() => {
         music.currentTime = savedTime;
-    }).catch(() => {});
+    }).catch(() => {
+        // autoplay blocked — show a small play button
+        const playBtn = document.createElement("div");
+        playBtn.id = "playBtn";
+        playBtn.innerHTML = "▶ TAP TO PLAY MUSIC";
+        playBtn.style.cssText = "position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#e60023;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;font-weight:bold;letter-spacing:2px;cursor:pointer;z-index:9998;";
+        document.body.appendChild(playBtn);
+        playBtn.addEventListener("click", () => {
+            music.play().then(() => { music.currentTime = savedTime; });
+            playBtn.remove();
+        });
+    });
 }
 
 function activateSound() {
