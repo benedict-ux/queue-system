@@ -280,6 +280,8 @@
 </head>
 <body>
 
+<audio id="bgMusic" loop src="audio/DWJ 1Q 2026 Full Digital.mp3" style="display:none"></audio>
+
 <div id="tapOverlay">
     <div class="tap-ring"><div class="tap-icon">👆</div></div>
     <p>TAP OR PRESS ANY KEY</p>
@@ -354,37 +356,40 @@ let repeatInterval = null;
 
 // 🔊 SOUND
 const overlay = document.getElementById("tapOverlay");
+const music = document.getElementById("bgMusic");
+music.volume = 0.4;
+
 if (localStorage.getItem("soundActivated") === "true") {
     overlay.style.display = "none";
     soundActivated = true;
+    music.play().catch(() => {});
 }
-overlay.addEventListener("click", () => {
+
+function activateSound() {
     speechSynthesis.cancel();
     speechSynthesis.speak(new SpeechSynthesisUtterance(""));
     soundActivated = true;
     localStorage.setItem("soundActivated", "true");
     overlay.style.display = "none";
-});
-// Also allow any key press to dismiss (for TV remotes)
+    music.play().catch(() => {});
+}
+
+overlay.addEventListener("click", activateSound);
 document.addEventListener("keydown", () => {
-    if (overlay.style.display !== "none") {
-        speechSynthesis.cancel();
-        speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-        soundActivated = true;
-        localStorage.setItem("soundActivated", "true");
-        overlay.style.display = "none";
-    }
+    if (overlay.style.display !== "none") activateSound();
 });
 
 function announceNew(newOrders) {
     if (!soundActivated || newOrders.length === 0) return;
+    const music = document.getElementById("bgMusic");
+    music.pause();
     let i = 0;
     function speakNext() {
         if (i >= newOrders.length) {
-            // restore top highlight after announcing
             document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking"));
             const first = document.querySelector("#orderList .order-box");
             if (first) first.classList.add("top");
+            music.play().catch(() => {});
             return;
         }
         document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking", "top"));
@@ -402,6 +407,8 @@ function announceNew(newOrders) {
 
 function announceAll() {
     if (!soundActivated) return;
+    const music = document.getElementById("bgMusic");
+    music.pause();
     function speakNext() {
         // always read live DOM for current ready orders
         const boxes = [...document.querySelectorAll("#orderList .order-box")];
@@ -417,6 +424,7 @@ function announceAll() {
         if (nextIdx >= boxes.length) {
             // done — restore top highlight on first box
             if (boxes.length > 0) boxes[0].classList.add("top");
+            document.getElementById("bgMusic").play().catch(() => {});
             return;
         }
 
