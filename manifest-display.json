@@ -1,0 +1,21 @@
+{
+  "name": "Queue Display - Jollibee EDSA Kamias",
+  "short_name": "Queue Display",
+  "start_url": "/queue-system/display.html",
+  "display": "standalone",
+  "background_color": "#f5f0f0",
+  "theme_color": "#e60023",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "assets/jollibee-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/jollibee-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
