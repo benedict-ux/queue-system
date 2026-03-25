@@ -367,10 +367,23 @@ const overlay = document.getElementById("tapOverlay");
 const music = document.getElementById("bgMusic");
 music.volume = 0.4;
 
+// restore playback position after refresh
+const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+
+// save position every second
+setInterval(() => {
+    if (!music.paused) localStorage.setItem("musicTime", music.currentTime);
+}, 1000);
+
+// reset saved time when song ends naturally
+music.addEventListener("ended", () => localStorage.setItem("musicTime", "0"));
+
 if (localStorage.getItem("soundActivated") === "true") {
     overlay.style.display = "none";
     soundActivated = true;
-    music.play().catch(() => {});
+    music.play().then(() => {
+        music.currentTime = savedTime;
+    }).catch(() => {});
 }
 
 function activateSound() {
@@ -379,7 +392,9 @@ function activateSound() {
     soundActivated = true;
     localStorage.setItem("soundActivated", "true");
     overlay.style.display = "none";
-    music.play().catch(() => {});
+    music.play().then(() => {
+        music.currentTime = parseFloat(localStorage.getItem("musicTime") || "0");
+    }).catch(e => console.error("Music play failed:", e));
 }
 
 overlay.addEventListener("click", activateSound);
