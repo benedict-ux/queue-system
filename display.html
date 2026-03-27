@@ -103,7 +103,7 @@
         }
 
         .now-serving-number {
-            font-size: clamp(60px, 9vw, 130px);
+            font-size: clamp(80px, 11vw, 150px);
             font-weight: bold;
             color: #fff;
             line-height: 1;
@@ -202,7 +202,7 @@
             background: #1e1e30;
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 10px;
-            font-size: clamp(16px, 2.2vw, 28px);
+            font-size: clamp(22px, 3vw, 38px);
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -257,7 +257,32 @@
             text-transform: uppercase;
         }
 
-        /* TAP OVERLAY */
+        /* AUDIO MODE TOGGLE */
+        #audioMode {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            z-index: 999;
+            display: flex;
+            gap: 6px;
+        }
+        #audioMode button {
+            background: rgba(0,0,0,0.5);
+            color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #audioMode button.active {
+            background: #e60023;
+            color: #fff;
+            border-color: #e60023;
+        }
         #tapOverlay {
             position: fixed;
             inset: 0;
@@ -287,6 +312,12 @@
     </style>
 </head>
 <body>
+
+<div id="audioMode">
+    <button id="modeMusic" onclick="setAudioMode('music')">🎵 MUSIC</button>
+    <button id="modeBoth" class="active" onclick="setAudioMode('both')">🎵+📢 BOTH</button>
+    <button id="modeAnnounce" onclick="setAudioMode('announce')">📢 ANNOUNCER</button>
+</div>
 
 <audio id="bgMusic" loop src="audio/DWJ 1Q 2026 Full Digital.mp3" style="display:none"></audio>
 
@@ -367,6 +398,23 @@ const overlay = document.getElementById("tapOverlay");
 const music = document.getElementById("bgMusic");
 music.volume = 0.4;
 
+// Audio mode: 'both' | 'music' | 'announce'
+let audioMode = localStorage.getItem("audioMode") || "both";
+function setAudioMode(mode) {
+    audioMode = mode;
+    localStorage.setItem("audioMode", mode);
+    document.querySelectorAll("#audioMode button").forEach(b => b.classList.remove("active"));
+    document.getElementById("mode" + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add("active");
+    if (mode === "announce") {
+        music.pause();
+    } else if (mode === "music" || mode === "both") {
+        if (soundActivated) music.play().catch(() => {});
+    }
+}
+window.setAudioMode = setAudioMode;
+// apply saved mode on load
+setAudioMode(audioMode);
+
 // restore playback position after refresh
 const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
 
@@ -381,20 +429,22 @@ music.addEventListener("ended", () => localStorage.setItem("musicTime", "0"));
 if (localStorage.getItem("soundActivated") === "true") {
     overlay.style.display = "none";
     soundActivated = true;
-    music.play().then(() => {
-        music.currentTime = savedTime;
-    }).catch(() => {
-        // autoplay blocked — show a small play button
-        const playBtn = document.createElement("div");
-        playBtn.id = "playBtn";
-        playBtn.innerHTML = "▶ TAP TO PLAY MUSIC";
-        playBtn.style.cssText = "position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#e60023;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;font-weight:bold;letter-spacing:2px;cursor:pointer;z-index:9998;";
-        document.body.appendChild(playBtn);
-        playBtn.addEventListener("click", () => {
-            music.play().then(() => { music.currentTime = savedTime; });
-            playBtn.remove();
+    if (audioMode !== "announce") {
+        music.play().then(() => {
+            music.currentTime = savedTime;
+        }).catch(() => {
+            // autoplay blocked — show a small play button
+            const playBtn = document.createElement("div");
+            playBtn.id = "playBtn";
+            playBtn.innerHTML = "▶ TAP TO PLAY MUSIC";
+            playBtn.style.cssText = "position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#e60023;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;font-weight:bold;letter-spacing:2px;cursor:pointer;z-index:9998;";
+            document.body.appendChild(playBtn);
+            playBtn.addEventListener("click", () => {
+                music.play().then(() => { music.currentTime = savedTime; });
+                playBtn.remove();
+            });
         });
-    });
+    }
 }
 
 function activateSound() {
@@ -415,15 +465,15 @@ document.addEventListener("keydown", () => {
 
 function announceNew(newOrders) {
     if (!soundActivated || newOrders.length === 0) return;
-    const music = document.getElementById("bgMusic");
-    music.pause();
+    if (audioMode === "music") return; // music only — skip announcer
+    if (audioMode === "both") music.pause();
     let i = 0;
     function speakNext() {
         if (i >= newOrders.length) {
             document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking"));
             const first = document.querySelector("#orderList .order-box");
             if (first) first.classList.add("top");
-            music.play().catch(() => {});
+            if (audioMode === "both") music.play().catch(() => {});
             return;
         }
         document.querySelectorAll(".order-box").forEach(b => b.classList.remove("speaking", "top"));
@@ -441,8 +491,8 @@ function announceNew(newOrders) {
 
 function announceAll() {
     if (!soundActivated) return;
-    const music = document.getElementById("bgMusic");
-    music.pause();
+    if (audioMode === "music") return; // music only — skip announcer
+    if (audioMode === "both") music.pause();
     function speakNext() {
         // always read live DOM for current ready orders
         const boxes = [...document.querySelectorAll("#orderList .order-box")];
@@ -458,7 +508,7 @@ function announceAll() {
         if (nextIdx >= boxes.length) {
             // done — restore top highlight on first box
             if (boxes.length > 0) boxes[0].classList.add("top");
-            document.getElementById("bgMusic").play().catch(() => {});
+            if (audioMode === "both") document.getElementById("bgMusic").play().catch(() => {});
             return;
         }
 
